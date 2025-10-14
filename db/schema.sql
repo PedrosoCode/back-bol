@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict eGi57cvs0Op8sfeIqkuTGRUnYrzVdEQ9O91M1bOod4GgwEgZa8pFEfiBPkMKsdd
+\restrict 3b5ysO2PlGzWbPPfasAbiLBe4ZJUpeG7nYgQQbvITCBCII9JJ9T4xae7V6tBXIP
 
 -- Dumped from database version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
 -- Dumped by pg_dump version 16.10 (Ubuntu 16.10-0ubuntu0.24.04.1)
 
--- Started on 2025-10-12 11:53:26 -03
+-- Started on 2025-10-13 22:03:06 -03
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -61,31 +61,35 @@ $$;
 ALTER FUNCTION public.fn_auth_valida_senha(p_usuario character varying, p_codigo_empresa integer) OWNER TO postgres;
 
 --
--- TOC entry 242 (class 1255 OID 17365)
--- Name: fn_parceiro_negocio_select(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
+-- TOC entry 245 (class 1255 OID 17379)
+-- Name: fn_parceiro_negocio_select(integer, integer, character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.fn_parceiro_negocio_select(p_codigo integer, p_codigo_empresa integer) RETURNS TABLE(codigo integer, codigo_empresa integer, nome_fantasia character varying, razao_social character varying, cnpj_cpf character varying, codigo_pais integer, codigo_estado integer, codigo_cidade integer, bairro character varying, rua character varying, n_rua character varying, cep character varying, pais character varying, estado character varying, cidade character varying)
+CREATE FUNCTION public.fn_parceiro_negocio_select(p_codigo integer, p_codigo_empresa integer, p_nome character varying) RETURNS TABLE("nCodigo" integer, "nCodigoEmpresa" integer, "sNomeFantasia" character varying, "sRazaoSocial" character varying, "sCnpjCpf" character varying, "nCodigoPais" integer, "nCodigoEstado" integer, "nCodigoCidade" integer, "sBairro" character varying, "sRua" character varying, "sNrua" character varying, "sCep" character varying, "sPais" character varying, "sEstado" character varying, "sCidade" character varying, "sContato" character varying, "sEmail" character varying, "sTelefone" character varying, "sComplemento" character varying)
     LANGUAGE plpgsql
     AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        parceiro.codigo AS codigo,
-        parceiro.codigo_empresa AS codigo_empresa,
-        parceiro.nome_fantasia AS nome_fantasia,
-        parceiro.razao_social AS razao_social,
-        parceiro.cnpj_cpf AS cnpj_cpf,
-        parceiro.codigo_pais AS codigo_pais,
-        parceiro.codigo_estado AS codigo_estado,
-        parceiro.codigo_cidade AS codigo_cidade,
-        parceiro.bairro AS bairro,
-        parceiro.rua AS rua,
-        parceiro.n_rua AS n_rua,
-        parceiro.cep AS cep,
-        tb_stc_pais.nome_pt AS pais,
-        tb_stc_estado.nome AS estado,
-        tb_stc_cidade.nome AS cidade
+        parceiro.codigo AS nCodigo,
+        parceiro.codigo_empresa AS nCodigoEmpresa,
+        parceiro.nome_fantasia AS sNomeFantasia,
+        parceiro.razao_social AS sRazaoSocial,
+        parceiro.cnpj_cpf AS sCnpjCpf,
+        parceiro.codigo_pais AS nCodigoPais,
+        parceiro.codigo_estado AS nCodigoEstado,
+        parceiro.codigo_cidade AS nCodigoCidade,
+        parceiro.bairro AS sBairro,
+        parceiro.rua AS sRua,
+        parceiro.n_rua AS sNrua,
+        parceiro.cep AS sCep,
+        tb_stc_pais.nome_pt AS sPais,
+        tb_stc_estado.nome AS sEstado,
+        tb_stc_cidade.nome AS sCidade,
+		parceiro.contato AS sContato,
+		parceiro.telefone AS sTelefone,
+		parceiro.email AS sEmail,
+		parceiro.complemento AS sComplemento
     FROM tb_cad_parceiro_negocio parceiro
     LEFT JOIN tb_stc_pais 
         ON tb_stc_pais.id = parceiro.codigo_pais
@@ -94,12 +98,81 @@ BEGIN
     LEFT JOIN tb_stc_cidade
         ON tb_stc_cidade.id = parceiro.codigo_cidade
     WHERE (parceiro.codigo = p_codigo OR p_codigo IS NULL)
-      AND (parceiro.codigo_empresa = p_codigo_empresa);
+      AND (parceiro.codigo_empresa = p_codigo_empresa)
+	  AND (
+	  		parceiro.nome_fantasia ILIKE '%' || p_nome || '%' 
+		  OR parceiro.razao_social ILIKE '%' || p_nome || '%' 
+		  OR p_nome = ''
+		);
+
 END;
 $$;
 
 
-ALTER FUNCTION public.fn_parceiro_negocio_select(p_codigo integer, p_codigo_empresa integer) OWNER TO postgres;
+ALTER FUNCTION public.fn_parceiro_negocio_select(p_codigo integer, p_codigo_empresa integer, p_nome character varying) OWNER TO postgres;
+
+--
+-- TOC entry 230 (class 1255 OID 17389)
+-- Name: fn_stc_combo_cidade(integer); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.fn_stc_combo_cidade(p_codigo_estado integer) RETURNS TABLE("nCodigoCidade" integer, "sNomeCidade" character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY
+	SELECT
+		tb_stc_cidade.id AS "nCodigoCidade",
+		(tb_stc_cidade.nome || ' - ' || tb_stc_estado.uf)::VARCHAR AS "sNomeCidade"
+	FROM tb_stc_cidade 
+	LEFT JOIN tb_stc_estado
+	ON tb_stc_estado.id = tb_stc_cidade.uf
+	WHERE (tb_stc_cidade.uf = p_codigo_estado OR p_codigo_estado IS NULL);
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_stc_combo_cidade(p_codigo_estado integer) OWNER TO postgres;
+
+--
+-- TOC entry 244 (class 1255 OID 17387)
+-- Name: fn_stc_combo_estado(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.fn_stc_combo_estado() RETURNS TABLE("nCodigoEstado" integer, "sNomeEstado" character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY
+	SELECT
+		id AS "nCodigoEstado",
+		nome AS "sNomeEstado"
+	FROM tb_stc_estado;
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_stc_combo_estado() OWNER TO postgres;
+
+--
+-- TOC entry 243 (class 1255 OID 17381)
+-- Name: fn_stc_combo_pais(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.fn_stc_combo_pais() RETURNS TABLE("nCodigoPais" integer, "sNomePais" character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY
+	SELECT
+		id AS "nCodigoPais",
+		nome_pt AS "sNomePais"
+	FROM tb_stc_pais;
+END;
+$$;
+
+
+ALTER FUNCTION public.fn_stc_combo_pais() OWNER TO postgres;
 
 --
 -- TOC entry 227 (class 1255 OID 17359)
@@ -129,7 +202,7 @@ $$;
 ALTER PROCEDURE public.sp_parceiro_negocio_insert(IN p_codigo_empresa integer, OUT p_codigo integer) OWNER TO postgres;
 
 --
--- TOC entry 230 (class 1255 OID 17362)
+-- TOC entry 231 (class 1255 OID 17362)
 -- Name: sp_parceiro_negocio_update(integer, integer, character varying, character varying, character varying, integer, integer, integer, character varying, character varying, character varying, character varying); Type: PROCEDURE; Schema: public; Owner: postgres
 --
 
@@ -224,7 +297,11 @@ CREATE TABLE public.tb_cad_parceiro_negocio (
     bairro character varying,
     rua character varying,
     n_rua character varying,
-    cep character varying
+    cep character varying,
+    contato character varying,
+    email character varying,
+    telefone character varying,
+    complemento character varying
 );
 
 
@@ -357,7 +434,7 @@ CREATE TABLE public.tb_stc_pais (
 ALTER TABLE public.tb_stc_pais OWNER TO postgres;
 
 --
--- TOC entry 3476 (class 0 OID 17177)
+-- TOC entry 3479 (class 0 OID 17177)
 -- Dependencies: 215
 -- Data for Name: tb_cad_empresa; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -368,7 +445,7 @@ COPY public.tb_cad_empresa (codigo, cnpj_cpf, nome_fantasia, razao_social) FROM 
 
 
 --
--- TOC entry 3478 (class 0 OID 17211)
+-- TOC entry 3481 (class 0 OID 17211)
 -- Dependencies: 217
 -- Data for Name: tb_cad_item; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -378,7 +455,7 @@ COPY public.tb_cad_item (codigo, codigo_empresa, codigo_item, descricao) FROM st
 
 
 --
--- TOC entry 3483 (class 0 OID 17295)
+-- TOC entry 3486 (class 0 OID 17295)
 -- Dependencies: 222
 -- Data for Name: tb_cad_modelo_maquina; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -388,19 +465,19 @@ COPY public.tb_cad_modelo_maquina (codigo, codigo_empresa, codigo_tipo_maquina, 
 
 
 --
--- TOC entry 3477 (class 0 OID 17184)
+-- TOC entry 3480 (class 0 OID 17184)
 -- Dependencies: 216
 -- Data for Name: tb_cad_parceiro_negocio; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.tb_cad_parceiro_negocio (codigo, codigo_empresa, nome_fantasia, razao_social, cnpj_cpf, codigo_pais, codigo_estado, codigo_cidade, bairro, rua, n_rua, cep) FROM stdin;
-1	1	teste 1 fant	teste 1 social	123	1	26	5265	jd das industrias	heitor	2	12241000
-2	1	teste 2 fant	teste 2social	456	1	26	5265	jd das industrias	heitor	4	12241000
+COPY public.tb_cad_parceiro_negocio (codigo, codigo_empresa, nome_fantasia, razao_social, cnpj_cpf, codigo_pais, codigo_estado, codigo_cidade, bairro, rua, n_rua, cep, contato, email, telefone, complemento) FROM stdin;
+1	1	teste 1 fant	teste 1 social	123	1	26	5265	jd das industrias	heitor	2	12241000	\N	\N	\N	\N
+2	1	teste 2 fant	teste 2social	456	1	26	5265	jd das industrias	heitor	4	12241000	1	2	3	4
 \.
 
 
 --
--- TOC entry 3479 (class 0 OID 17223)
+-- TOC entry 3482 (class 0 OID 17223)
 -- Dependencies: 218
 -- Data for Name: tb_cad_servico; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -410,7 +487,7 @@ COPY public.tb_cad_servico (codigo, codigo_empresa, codigo_servico, descricao) F
 
 
 --
--- TOC entry 3482 (class 0 OID 17283)
+-- TOC entry 3485 (class 0 OID 17283)
 -- Dependencies: 221
 -- Data for Name: tb_cad_tipo_maquina; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -420,7 +497,7 @@ COPY public.tb_cad_tipo_maquina (codigo, codigo_empresa, descricao) FROM stdin;
 
 
 --
--- TOC entry 3484 (class 0 OID 17312)
+-- TOC entry 3487 (class 0 OID 17312)
 -- Dependencies: 223
 -- Data for Name: tb_cad_usuario; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -431,7 +508,7 @@ COPY public.tb_cad_usuario (codigo, codigo_empresa, senha, nome, usuario) FROM s
 
 
 --
--- TOC entry 3480 (class 0 OID 17248)
+-- TOC entry 3483 (class 0 OID 17248)
 -- Dependencies: 219
 -- Data for Name: tb_servico_ordem_servico; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -441,7 +518,7 @@ COPY public.tb_servico_ordem_servico (codigo, codigo_empresa, codigo_parceiro_ne
 
 
 --
--- TOC entry 3481 (class 0 OID 17273)
+-- TOC entry 3484 (class 0 OID 17273)
 -- Dependencies: 220
 -- Data for Name: tb_servico_ordem_servico_linha; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -451,7 +528,7 @@ COPY public.tb_servico_ordem_servico_linha (codigo, codigo_empresa, codigo_ordem
 
 
 --
--- TOC entry 3487 (class 0 OID 17351)
+-- TOC entry 3490 (class 0 OID 17351)
 -- Dependencies: 226
 -- Data for Name: tb_stc_cidade; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -6056,7 +6133,7 @@ COPY public.tb_stc_cidade (id, nome, uf, ibge) FROM stdin;
 
 
 --
--- TOC entry 3486 (class 0 OID 17344)
+-- TOC entry 3489 (class 0 OID 17344)
 -- Dependencies: 225
 -- Data for Name: tb_stc_estado; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -6094,7 +6171,7 @@ COPY public.tb_stc_estado (id, nome, uf, ibge, pais, ddd) FROM stdin;
 
 
 --
--- TOC entry 3485 (class 0 OID 17337)
+-- TOC entry 3488 (class 0 OID 17337)
 -- Dependencies: 224
 -- Data for Name: tb_stc_pais; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -6358,7 +6435,7 @@ COPY public.tb_stc_pais (id, nome, nome_pt, sigla, bacen) FROM stdin;
 
 
 --
--- TOC entry 3304 (class 2606 OID 17217)
+-- TOC entry 3307 (class 2606 OID 17217)
 -- Name: tb_cad_item pk_item; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6367,7 +6444,7 @@ ALTER TABLE ONLY public.tb_cad_item
 
 
 --
--- TOC entry 3314 (class 2606 OID 17301)
+-- TOC entry 3317 (class 2606 OID 17301)
 -- Name: tb_cad_modelo_maquina pk_modelo_maquina; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6376,7 +6453,7 @@ ALTER TABLE ONLY public.tb_cad_modelo_maquina
 
 
 --
--- TOC entry 3308 (class 2606 OID 17252)
+-- TOC entry 3311 (class 2606 OID 17252)
 -- Name: tb_servico_ordem_servico pk_ordem_servico; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6385,7 +6462,7 @@ ALTER TABLE ONLY public.tb_servico_ordem_servico
 
 
 --
--- TOC entry 3310 (class 2606 OID 17277)
+-- TOC entry 3313 (class 2606 OID 17277)
 -- Name: tb_servico_ordem_servico_linha pk_ordem_servico_linha; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6394,7 +6471,7 @@ ALTER TABLE ONLY public.tb_servico_ordem_servico_linha
 
 
 --
--- TOC entry 3302 (class 2606 OID 17190)
+-- TOC entry 3305 (class 2606 OID 17190)
 -- Name: tb_cad_parceiro_negocio pk_parceiro_negocio; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6403,7 +6480,7 @@ ALTER TABLE ONLY public.tb_cad_parceiro_negocio
 
 
 --
--- TOC entry 3306 (class 2606 OID 17229)
+-- TOC entry 3309 (class 2606 OID 17229)
 -- Name: tb_cad_servico pk_servico; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6412,7 +6489,7 @@ ALTER TABLE ONLY public.tb_cad_servico
 
 
 --
--- TOC entry 3312 (class 2606 OID 17289)
+-- TOC entry 3315 (class 2606 OID 17289)
 -- Name: tb_cad_tipo_maquina pk_tipo_maquina; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6421,7 +6498,7 @@ ALTER TABLE ONLY public.tb_cad_tipo_maquina
 
 
 --
--- TOC entry 3316 (class 2606 OID 17318)
+-- TOC entry 3319 (class 2606 OID 17318)
 -- Name: tb_cad_usuario pk_usuario; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6430,7 +6507,7 @@ ALTER TABLE ONLY public.tb_cad_usuario
 
 
 --
--- TOC entry 3300 (class 2606 OID 17183)
+-- TOC entry 3303 (class 2606 OID 17183)
 -- Name: tb_cad_empresa tb_cad_empresa_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6439,7 +6516,7 @@ ALTER TABLE ONLY public.tb_cad_empresa
 
 
 --
--- TOC entry 3322 (class 2606 OID 17357)
+-- TOC entry 3325 (class 2606 OID 17357)
 -- Name: tb_stc_cidade tb_stc_cidade_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6448,7 +6525,7 @@ ALTER TABLE ONLY public.tb_stc_cidade
 
 
 --
--- TOC entry 3320 (class 2606 OID 17350)
+-- TOC entry 3323 (class 2606 OID 17350)
 -- Name: tb_stc_estado tb_stc_estado_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6457,7 +6534,7 @@ ALTER TABLE ONLY public.tb_stc_estado
 
 
 --
--- TOC entry 3318 (class 2606 OID 17343)
+-- TOC entry 3321 (class 2606 OID 17343)
 -- Name: tb_stc_pais tb_stc_pais_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6466,7 +6543,7 @@ ALTER TABLE ONLY public.tb_stc_pais
 
 
 --
--- TOC entry 3324 (class 2606 OID 17218)
+-- TOC entry 3327 (class 2606 OID 17218)
 -- Name: tb_cad_item fk_empresa; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6475,7 +6552,7 @@ ALTER TABLE ONLY public.tb_cad_item
 
 
 --
--- TOC entry 3325 (class 2606 OID 17230)
+-- TOC entry 3328 (class 2606 OID 17230)
 -- Name: tb_cad_servico fk_empresa; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6484,7 +6561,7 @@ ALTER TABLE ONLY public.tb_cad_servico
 
 
 --
--- TOC entry 3330 (class 2606 OID 17302)
+-- TOC entry 3333 (class 2606 OID 17302)
 -- Name: tb_cad_modelo_maquina fk_modelo_maquina_empresa; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6493,7 +6570,7 @@ ALTER TABLE ONLY public.tb_cad_modelo_maquina
 
 
 --
--- TOC entry 3331 (class 2606 OID 17307)
+-- TOC entry 3334 (class 2606 OID 17307)
 -- Name: tb_cad_modelo_maquina fk_modelo_maquina_tipo_maquina; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6502,7 +6579,7 @@ ALTER TABLE ONLY public.tb_cad_modelo_maquina
 
 
 --
--- TOC entry 3326 (class 2606 OID 17253)
+-- TOC entry 3329 (class 2606 OID 17253)
 -- Name: tb_servico_ordem_servico fk_ordem_servico_empresa; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6511,7 +6588,7 @@ ALTER TABLE ONLY public.tb_servico_ordem_servico
 
 
 --
--- TOC entry 3328 (class 2606 OID 17278)
+-- TOC entry 3331 (class 2606 OID 17278)
 -- Name: tb_servico_ordem_servico_linha fk_ordem_servico_os; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6520,7 +6597,7 @@ ALTER TABLE ONLY public.tb_servico_ordem_servico_linha
 
 
 --
--- TOC entry 3327 (class 2606 OID 17258)
+-- TOC entry 3330 (class 2606 OID 17258)
 -- Name: tb_servico_ordem_servico fk_ordem_servico_parceiro; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6529,7 +6606,7 @@ ALTER TABLE ONLY public.tb_servico_ordem_servico
 
 
 --
--- TOC entry 3323 (class 2606 OID 17191)
+-- TOC entry 3326 (class 2606 OID 17191)
 -- Name: tb_cad_parceiro_negocio fk_parceiro_empresa; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6538,7 +6615,7 @@ ALTER TABLE ONLY public.tb_cad_parceiro_negocio
 
 
 --
--- TOC entry 3329 (class 2606 OID 17290)
+-- TOC entry 3332 (class 2606 OID 17290)
 -- Name: tb_cad_tipo_maquina fk_tipo_maquina_empresa; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6547,7 +6624,7 @@ ALTER TABLE ONLY public.tb_cad_tipo_maquina
 
 
 --
--- TOC entry 3332 (class 2606 OID 17319)
+-- TOC entry 3335 (class 2606 OID 17319)
 -- Name: tb_cad_usuario fk_usuario_empresa; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -6555,11 +6632,11 @@ ALTER TABLE ONLY public.tb_cad_usuario
     ADD CONSTRAINT fk_usuario_empresa FOREIGN KEY (codigo_empresa) REFERENCES public.tb_cad_empresa(codigo);
 
 
--- Completed on 2025-10-12 11:53:26 -03
+-- Completed on 2025-10-13 22:03:06 -03
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict eGi57cvs0Op8sfeIqkuTGRUnYrzVdEQ9O91M1bOod4GgwEgZa8pFEfiBPkMKsdd
+\unrestrict 3b5ysO2PlGzWbPPfasAbiLBe4ZJUpeG7nYgQQbvITCBCII9JJ9T4xae7V6tBXIP
 

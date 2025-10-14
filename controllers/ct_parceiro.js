@@ -6,34 +6,24 @@ const { TIME, DATE } = require("sequelize");
 
 const getParceiro = async (req, res) => {
   try {
-    const authHeader = req.headers["authorization"];
-    if (!authHeader) {
-      return res.status(401).json({ error: "Token não fornecido." });
-    }
 
-    const token = authHeader.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ error: "Token inválido." });
-    }
-
-    const jwtInfo = jwt.verify(token, process.env.JWT_SECRET);
-    if (!jwtInfo || !jwtInfo.jwt_nCodigoEmpresa) {
-      return res.status(403).json({ error: "Token inválido ou expirado." });
-    }
 
     const { sNomeParceiro } = req.body;
+    const nCodigo = null
 
-    const execQuery = `SELECT * FROM fn_parceiro_negocio_select(:p_codigo, :p_codigo_empresa)`;
+    const execQuery = `SELECT * FROM fn_parceiro_negocio_select(:p_codigo, :p_codigo_empresa, :p_nome)`;
 
-    // Executa a consulta
-    const results = await conn.query(execQuery, {
+    const [results] = await conn.query(execQuery, { 
       replacements: {
-        p_codigo_empresa: jwtInfo.jwt_nCodigoEmpresa,
-        p_nome_parceiro: sNomeParceiro, 
+        p_codigo: nCodigo,
+        p_codigo_empresa: req.user.codigoEmpresa,
+        p_nome: sNomeParceiro, 
       },
     });
 
-    if (!results || results.length === 0) {
+    const retorno = results[0]
+
+    if (!retorno) {
       return res.status(404).json({ error: "Nenhum parceiro encontrado." });
     }
 
@@ -55,29 +45,15 @@ const getParceiro = async (req, res) => {
 const getParceiroPorId = async (req, res) => {
   try {
 
-    const authHeader = req.headers["authorization"];
-    if (!authHeader) {
-      return res.status(401).json({ error: "Token não fornecido." });
-    }
-
-    const token = authHeader.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ error: "Token inválido." });
-    }
-
-    const jwtInfo = jwt.verify(token, process.env.JWT_SECRET);
-    if (!jwtInfo || !jwtInfo.jwt_nCodigoEmpresa) {
-      return res.status(403).json({ error: "Token inválido ou expirado." });
-    }
-
     const { nCodigoParceiro } = req.body;
 
-    const execQuery = `CALL sp_select_parceiro_negocio_dados(:p_codigo_empresa, :p_nome_parceiro)`;
+    const execQuery = `SELECT * FROM fn_parceiro_negocio_select(:p_codigo, :p_codigo_empresa, :p_nome)`;
 
-    const results = await conn.query(execQuery, {
+    const [results] = await conn.query(execQuery, {
       replacements: {
-        p_codigo_empresa: jwtInfo.jwt_nCodigoEmpresa,
-        p_nome_parceiro: nCodigoParceiro, 
+        p_codigo: nCodigoParceiro,
+        p_codigo_empresa: req.user.codigoEmpresa,
+        p_nome: '', 
       },
     });
 
@@ -229,6 +205,6 @@ const DeleteParceiro = async (req, res) => {
 module.exports = {
   getParceiro,
   getParceiroPorId,
-  upsertParceiro,
+  updateParceiro,
   DeleteParceiro
 }; 

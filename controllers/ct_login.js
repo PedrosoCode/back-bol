@@ -31,7 +31,7 @@ const login = async (req, res) => {
       SELECT * FROM fn_auth_valida_senha(:p_nome_usuario, :p_codigo_empresa)
     `;
 
-    const [rows] = await conn.query(sql, {
+    const [rows] = await conn.query(sql, { 
       replacements: {
         p_nome_usuario: sNomeUsuario,
         p_codigo_empresa: nCodigoEmpresa
