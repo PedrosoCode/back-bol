@@ -150,7 +150,7 @@ const insertParceiro = async (req, res) => {
         }
       });
 
-    res.status(201).json({ message: 'insercao realizada!' });
+    res.status(201).json({ message: 'insercao realizada!', codigo_insert: nCodigo });
   } catch (err) {
     console.error('Erro ao inserir parceiro de negócio:', err);
     res.status(500).json({ error: 'Erro ao inserir parceiro de negócio.' });
@@ -228,32 +228,15 @@ const DeleteParceiro = async (req, res) => {
 
   try {
 
-      const { 
-              nCodigoParceiro
-            } = req.body; 
+      const { nCodigoParceiro } = req.body; 
 
-        const authHeader = req.headers["authorization"];
-        if (!authHeader) {
-          return res.status(401).json({ error: "Token não fornecido." });
-        }
-    
-        const token = authHeader.split(" ")[1];
-        if (!token) {
-          return res.status(401).json({ error: "Token inválido." });
-        }
-    
-        const jwtInfo = jwt.verify(token, process.env.JWT_SECRET);
-        if (!jwtInfo || !jwtInfo.jwt_nCodigoEmpresa) {
-          return res.status(403).json({ error: "Token inválido ou expirado." });
-        }
-
-      const sql = `CALL sp_delete_parceiro_negocio(:p_codigo,
+      const sql = `CALL sp_parceiro_negocio_delete(:p_codigo,
                                                    :p_codigo_empresa)`;
 
     await conn.query(sql, {
       replacements: {
         p_codigo                : nCodigoParceiro             ,
-        p_codigo_empresa        : jwtInfo.jwt_nCodigoEmpresa  
+        p_codigo_empresa        : req.user.codigoEmpresa  
       }
     });
 
