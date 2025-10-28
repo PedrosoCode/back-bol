@@ -16,10 +16,12 @@ app.use(express.urlencoded({ extended: false }));
 const login_rt = require('./routes/rt_login');
 const parceiro_rt = require('./routes/rt_parceiro')
 const generico_rt = require('./routes/rt_generico')
+const item_rt = require('./routes/rt_item')
 
 app.use('/login', login_rt);
 app.use('/parceiro', parceiro_rt);
 app.use('/generico', generico_rt);
+app.use('/item', item_rt);
 
 app.listen(3042, () => {
     console.log('Server is running on http://localhost:3042');
