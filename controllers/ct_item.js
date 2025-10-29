@@ -86,24 +86,12 @@ const insertItem = async (req, res) => {
   try {
 
       const {
-        sRazaoSocial,
-        sNomeFantasia,
-        sEmail,
-        sDocumento,
-        sTelefone,
-        sContato,
-        sLogradouro,
-        sBairro,
-        sComplemento,
-        sNumero,
-        sCep,
-        nCodigoPais,
-        nCodigoCidade,
-        nCodigoEstado,
+        sCodigoItem,
+        sDescricao,
       } = req.body
 
         
-      const sqlInsert = `CALL sp_parceiro_negocio_insert(:p_codigo_empresa,
+      const sqlInsert = `CALL sp_cadastro_insert_item(:p_codigo_empresa,
                                                          :p_codigo)`;
 
       const [result] = await conn.query(sqlInsert, {
@@ -116,48 +104,24 @@ const insertItem = async (req, res) => {
 
        const nCodigo = result[0].p_codigo
 
-      const sqlUpdate = `CALL sp_parceiro_negocio_update(:p_codigo,
-                                                         :p_codigo_empresa,
-                                                         :p_nome_fantasia,
-                                                         :p_razao_social,
-                                                         :p_cnpj_cpf,
-                                                         :p_codigo_pais,
-                                                         :p_codigo_estado,
-                                                         :p_codigo_cidade,
-                                                         :p_bairro,
-                                                         :p_rua,
-                                                         :p_n_rua,
-                                                         :p_cep,
-                                                         :p_email,
-                                                         :p_telefone,
-                                                         :p_contato,
-                                                         :p_complemento)`;
+      const sqlUpdate = `CALL sp_cadastro_item_update(:p_codigo,
+                                                      :p_codigo_empresa,
+                                                      :p_codigo_item,
+                                                      :p_descricao)`;
 
       await conn.query(sqlUpdate, {
         replacements: {
-          p_codigo                : nCodigo,
-          p_codigo_empresa        : req.user.codigoEmpresa,
-          p_nome_fantasia         : sNomeFantasia,
-          p_razao_social          : sRazaoSocial,
-          p_cnpj_cpf              : sDocumento,
-          p_codigo_pais           : nCodigoPais,
-          p_codigo_estado         : nCodigoEstado,
-          p_codigo_cidade         : nCodigoCidade,
-          p_bairro                : sBairro,
-          p_rua                   : sLogradouro,
-          p_n_rua                 : sNumero,
-          p_cep                   : sCep,
-          p_email                 : sEmail,
-          p_telefone              : sTelefone,
-          p_complemento           : sComplemento,
-          p_contato               : sContato
+          p_codigo             : nCodigo,
+          p_codigo_empresa     : req.user.codigoEmpresa,
+          p_codigo_item        : sCodigoItem,
+          p_descricao          : sDescricao
         }
       });
 
     res.status(201).json({ message: 'insercao realizada!', codigo_insert: nCodigo });
   } catch (err) {
-    console.error('Erro ao inserir parceiro de negócio:', err);
-    res.status(500).json({ error: 'Erro ao inserir parceiro de negócio.' });
+    console.error('Erro ao inserir item:', err);
+    res.status(500).json({ error: 'Erro ao inserir item.' });
   }
 };
 
@@ -166,65 +130,29 @@ const updateItem = async (req, res) => {
   try {
 
       const {
-        nCodigoParceiro,
-        sRazaoSocial,
-        sNomeFantasia,
-        sEmail,
-        sDocumento,
-        sTelefone,
-        sContato,
-        sLogradouro,
-        sBairro,
-        sComplemento,
-        sNumero,
-        sCep,
-        nCodigoPais,
-        nCodigoCidade,
-        nCodigoEstado,
+        nCodigo,
+        sCodigoItem,
+        sDescricao,
       } = req.body
 
-      const sqlUpdate = `CALL sp_parceiro_negocio_update(:p_codigo,
-                                                         :p_codigo_empresa,
-                                                         :p_nome_fantasia,
-                                                         :p_razao_social,
-                                                         :p_cnpj_cpf,
-                                                         :p_codigo_pais,
-                                                         :p_codigo_estado,
-                                                         :p_codigo_cidade,
-                                                         :p_bairro,
-                                                         :p_rua,
-                                                         :p_n_rua,
-                                                         :p_cep,
-                                                         :p_email,
-                                                         :p_telefone,
-                                                         :p_contato,
-                                                         :p_complemento)`;
+      const sqlUpdate = `CALL sp_cadastro_item_update(:p_codigo,
+                                                      :p_codigo_empresa,
+                                                      :p_codigo_item,
+                                                      :p_descricao)`;
 
       await conn.query(sqlUpdate, {
         replacements: {
-          p_codigo                : nCodigoParceiro,
-          p_codigo_empresa        : req.user.codigoEmpresa,
-          p_nome_fantasia         : sNomeFantasia,
-          p_razao_social          : sRazaoSocial,
-          p_cnpj_cpf              : sDocumento,
-          p_codigo_pais           : nCodigoPais,
-          p_codigo_estado         : nCodigoEstado,
-          p_codigo_cidade         : nCodigoCidade,
-          p_bairro                : sBairro,
-          p_rua                   : sLogradouro,
-          p_n_rua                 : sNumero,
-          p_cep                   : sCep,
-          p_email                 : sEmail,
-          p_telefone              : sTelefone,
-          p_complemento           : sComplemento,
-          p_contato               : sContato
+          p_codigo             : nCodigo,
+          p_codigo_empresa     : req.user.codigoEmpresa,
+          p_codigo_item        : sCodigoItem,
+          p_descricao          : sDescricao
         }
       });
 
     res.status(201).json({ message: 'atualizacao realizada!' });
   } catch (err) {
-    console.error('Erro ao atualizar parceiro de negócio:', err);
-    res.status(500).json({ error: 'Erro ao atualizar parceiro de negócio.' });
+    console.error('Erro ao atualizar item:', err);
+    res.status(500).json({ error: 'Erro ao atualizar item.' });
   }
 };
 
@@ -232,22 +160,21 @@ const deleteItem = async (req, res) => {
 
   try {
 
-      const { nCodigoParceiro } = req.body; 
+      const { nCodigo } = req.body; 
 
-      const sql = `CALL sp_parceiro_negocio_delete(:p_codigo,
-                                                   :p_codigo_empresa)`;
+      const sql = `CALL sp_cadastro_delete_item(:p_codigo_empresa, :p_codigo)`;
 
     await conn.query(sql, {
       replacements: {
-        p_codigo                : nCodigoParceiro             ,
+        p_codigo                : nCodigo,
         p_codigo_empresa        : req.user.codigoEmpresa  
       }
     });
 
     res.status(201).json({ message: 'exclusão realizada!' });
   } catch (err) {
-    console.error('Erro ao excluir parceiro de negócio:', err);
-    res.status(500).json({ error: 'Erro ao excluir parceiro de negócio.' });
+    console.error('Erro ao excluir item:', err);
+    res.status(500).json({ error: 'Erro ao item.' });
   }
 };
 
